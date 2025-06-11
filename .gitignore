@@ -1,0 +1,24 @@
+# .gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+env/
+venv/
+*.env
+.idea/
+.vscode/
+
+# Django
+db.sqlite3
+/media/
+/static/
+*.log
+local_settings.py
+
+# Operating System files
+.DS_Store
+Thumbs.dbnul not found
