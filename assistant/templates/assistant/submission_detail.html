@@ -1,10 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submission Details - {{ submission.student_name }}</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; line-height: 1.6; color: #333; }
+        .container { max-width: 800px; margin: auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1, h2, h3 { text-align: center; color: #333; margin-bottom: 20px; }
+        .detail-item { margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px; }
+        .detail-item strong { color: #555; }
+        .feedback-section { margin-top: 30px; border-top: 2px solid #007bff; padding-top: 20px; }
+        .feedback-item { margin-bottom: 8px; line-height: 1.4; }
+        .mispronounced { color: #d9534f; font-weight: bold; } /* Red for errors */
+        .correct { color: #5cb85c; } /* Green for correct */
+        .extra-word { color: #f0ad4e; font-weight: bold; } /* Orange for extra words */
+        .skipped-word { color: #337ab7; font-weight: bold; } /* Blue for skipped words */
+        .error-message { color: darkred; background-color: #ffe6e6; padding: 10px; border-radius: 5px; border: 1px solid red; margin-bottom: 20px;}
+        .summary-box { background-color: #e6f7ff; border: 1px solid #91d5ff; border-radius: 5px; padding: 15px; margin-bottom: 20px; text-align: center; font-size: 1.1em; font-weight: bold; color: #0056b3; }
+        .back-link { display: block; text-align: center; margin-top: 30px; }
+    </style>
 </head>
 <body>
-$END$
+    <div class="container">
+        <h1>Submission Details</h1>
+        <div class="detail-item">
+            <strong>Student Name:</strong> {{ submission.student_name }}
+        </div>
+        <div class="detail-item">
+            <strong>Submitted At:</strong> {{ submission.submitted_at|date:"F d, Y H:i" }}
+        </div>
+        <div class="detail-item">
+            <strong>Original Text:</strong> <p>{{ submission.original_text|linebreaksbr }}</p>
+        </div>
+        <div class="detail-item">
+            <strong>Audio File:</strong> <a href="{{ submission.audio_file.url }}" target="_blank">Listen to Audio</a>
+        </div>
+        <div class="detail-item">
+            <strong>Evaluation Status:</strong> {{ submission.evaluation_status }}
+        </div>
+
+        {% if submission.evaluation_status == 'Completed' %}
+            <div class="feedback-section">
+                <h2>Pronunciation Feedback</h2>
+                {% if submission.feedback_json %}
+                    {% if submission.feedback_json.error %}
+                        <div class="error-message">
+                            <strong>Error during evaluation:</strong> {{ submission.feedback_json.error }}
+                        </div>
+                    {% else %}
+                        {% if submission.feedback_json.summary %}
+                            <div class="summary-box">
+                                {{ submission.feedback_json.summary }}
+                                {% if submission.feedback_json.overall_score is not None %}
+                                    <br>Overall Score: <strong>{{ submission.feedback_json.overall_score }}%</strong>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <h3>Transcription:</h3>
+                        <p>{{ submission.feedback_json.transcription }}</p>
+
+                        <h3>Word-by-Word Analysis:</h3>
+                        <ul>
+                            {% for word_feedback in submission.feedback_json.words_feedback %}
+                                <li class="feedback-item">
+                                    {% if word_feedback.expected_word %}
+                                        Expected: <span class="skipped-word">"{{ word_feedback.expected_word }}"</span>
+                                    {% else %}
+                                        <span class="extra-word">Extra Word:</span>
+                                    {% endif %}
+
+                                    {% if word_feedback.transcribed_word %}
+                                        <span class="{% if word_feedback.is_mispronounced %}mispronounced{% else %}correct{% endif %}">
+                                            Transcribed: "{{ word_feedback.transcribed_word }}"
+                                        </span>
+                                    {% else %}
+                                        <span class="skipped-word"> -- (Not detected)</span>
+                                    {% endif %}
+
+                                    {% if word_feedback.confidence is not None %}
+                                        (Confidence: {{ word_feedback.confidence|floatformat:2 }})
+                                    {% endif %}
+                                    {% if word_feedback.reason %}
+                                        - <em>{{ word_feedback.reason }}</em>
+                                    {% endif %}
+                                    {% if word_feedback.start_time %}
+                                        [Start: {{ word_feedback.start_time|floatformat:2 }}s, End: {{ word_feedback.end_time|floatformat:2 }}s]
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                {% else %}
+                    <p>No detailed feedback available yet.</p>
+                {% endif %}
+            </div>
+        {% elif submission.evaluation_status == 'Failed' %}
+            <div class="feedback-section">
+                <h2>Evaluation Failed</h2>
+                <div class="error-message">
+                    <p>There was an error processing your audio. Please try again or contact support.</p>
+                    {% if submission.feedback_json and submission.feedback_json.error %}
+                        <p>Error details: {{ submission.feedback_json.error }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="feedback-section">
+                <p>Evaluation is {{ submission.evaluation_status|lower }}. Please check back later.</p>
+            </div>
+        {% endif %}
+        <div class="back-link">
+            <a href="{% url 'submit_audio' %}">Submit another audio</a>
+        </div>
+    </div>
 </body>
 </html>

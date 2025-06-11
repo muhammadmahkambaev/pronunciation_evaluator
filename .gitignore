@@ -22,3 +22,5 @@ local_settings.py
 # Operating System files
 .DS_Store
 Thumbs.dbnul not found
+# Add this line to your .gitignore file
+google-credentials.json
